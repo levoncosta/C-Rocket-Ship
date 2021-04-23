@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Rocket Game!</title>
+        <style>
+            .DivOuter
+            {
+                display: grid;
+                grid-template-columns:20% 80%;
+            }
+
+            .DivControl 
+            {
+                background-color: indigo;
+                height: 1000px;
+            }
+
+            .DivGame 
+            {
+                background-color: black;
+                background-image: url("Images/planet.png");
+                height: 1000px;
+            }
+            .btnLarge
+            {
+                width: 120px;
+                height: 60px;
+                background-color: crimson;
+                font-size: 25px;
+                font-weight: bold;
+                border-color: red;
+                border-width: 8px;
+                border-radius: 12px;
+            }
+            .btnSmall
+            {
+                width: 40px;
+                height: 60px;
+                background-color: crimson;
+                font-size: 25px;
+                font-weight: bold;
+                border-color: red;
+                border-width: 4px;
+                border-radius: 6px;
+            }
+            .Textbox
+            {
+                width: 80px;
+                height: 40px;
+                background-color: crimson;
+                font-size: 16px;
+                font-weight: bold;
+                border-color: red;
+                border-width: 4px;
+                border-radius: 6px;
+            }
+        </style>
+        <script type="text/javascript">
+            var sim = false; //assume the game is not playing at the start
+            var eng = false, engSave = false; 
+            var left = false, leftSave = false; 
+            var right = false, rightSave = false;
+            var tmr;
+            var y = 10, vy = 0;
+            var x = 0, vx = 0;
+            var accy = 0; //assume not accelerating at the start, up or down 
+            var accx = 0;
+            var fuel = 10000;
+            var score = 0;
+            var counter = 0;
+            var frame = 0;
+            var crashGround = false;
+            var crashSpace = false;
+
+            function SaveInput()
+            {
+                engSave = eng;
+                leftSave = left;
+                rightSave = right;
+                if (eng == true)
+                {
+                    Engine();
+                }
+                if (left == true)
+                {
+                    Left();
+                }
+                if (right == true)
+                {
+                    Right();
+                }
+            }
+            function LoadInput()
+            {
+                if (engSave == true)
+                {
+                    Engine();
+                }
+                if (leftSave == true)
+                {
+                    Left();
+                }
+                if (rightSave == true)
+                {
+                    Right();
+                }
+            }
+            function Sim()
+            { //Play or pause the game in progress
+                sim = !sim; // reverse the boolean from true to false or false to true
+                if (sim == true)
+                {
+                    btnSim.style.backgroundColor = "green";
+                    btnSim.value = "Pause";
+                    LoadInput();
+                    tmr = setInterval(StepForward, 17);
+                }
+                else
+                {// Sim is not running, change color to crimson
+                    btnSim.style.backgroundColor = "crimson";
+                    btnSim.value = "Play";
+                    SaveInput();
+                    clearInterval(tmr);
+                }
+            }
+            function Engine()
+            { 
+                eng = !eng; 
+                if (eng == true)
+                {
+                    btnEng.style.backgroundColor = "green";    
+                }
+                else
+                {
+                    btnEng.style.backgroundColor = "crimson";
+                }
+            }
+            function Left()
+            { 
+                left = !left; 
+                if (left == true)
+                {
+                    btnLeft.style.backgroundColor = "green";    
+                        if (right == true) // check if the right thruster is on
+                        { // automatically disables the other thruster 
+                            Right(); // turn the right thruster off
+                        }
+                }
+                else
+                {
+                    btnLeft.style.backgroundColor = "crimson";
+                }
+            }
+            function Right()
+            { 
+                right = !right; 
+                if (right == true)
+                {
+                    btnRight.style.backgroundColor = "green"; 
+                        if (left == true)
+                        {
+                            Left();
+                        }
+                }
+                else
+                {
+                    btnRight.style.backgroundColor = "crimson";
+                }
+            }
+            function StepForward()
+            {
+                CheckFuel();
+
+                if (eng == true)
+                {
+                    accy = 20; // move up due to thrust
+                }
+                else
+                {
+                    accy = -10; // downward acceleration due to gravity
+                }
+
+                if (left == true)
+                {
+                    accx = -20; // move up due to thrust
+                }
+                else if (right == true)
+                {
+                    accx = 20;
+                }
+                else
+                {
+                    accx = 0;
+                }
+                vy = vy + accy * 0.017;
+                y = y + vy * 0.017;
+
+                vx = vx + accx * 0.017;
+                x = x + vx * 0.017;
+
+                var marTop = 800 - y;
+                if (y < 0)
+                {
+                    crashGround = true;
+
+                }
+                else if (y > 800)
+                {
+                    crashSpace = true;
+                }
+                else
+                {                  
+                    if (x >= 955 && x <= 975)
+                    {
+                        if (marTop >= 311 && marTop <= 321)
+                        {
+                            if (vy >= -10 && vy <= 10)
+                            {
+                                if (vx >= -15 && vx <= 15)
+                                {
+                                    Sim();
+                                    score = score + fuel;
+                                    UpdateDashboard();
+                                    alert("You win!");
+                                }
+                            
+                            }
+                        }
+                        
+                    }
+                }
+
+                counter = counter + 0.2; // slow down the counter due to high animation rate
+                var round = Math.round(counter);
+                var filename;
+
+                if (crashGround == false && crashSpace == false)
+                {
+                    frame = round % 4;
+                    var insert = ""; // assume engine is not on
+                    if (eng == true)
+                    {
+                        insert = "On";
+                    }
+
+                    filename = "Images/Rocket" + insert + frame + ".png";
+                }
+                else if (crashGround == true)
+                {
+                    frame = round % 15;
+                    filename = "Images/gExplosion" + frame + ".png";
+                    y = 0;
+                    if (frame >= 14)
+                    {
+                        Sim();
+                    }
+                }
+                else 
+                {
+                    frame = round % 33;
+                    filename = "Images/explosion" + frame + ".png";
+                    y = 800;
+                    if (frame >= 32)
+                    {
+                        Sim();
+                    }
+                }  
+                var marTop = 800 - y;
+                imgRocket.src = filename;
+                imgRocket.style.marginTop = marTop + "px";
+                var marLeft = x;
+                imgRocket.style.marginLeft = marLeft + "px";
+
+                score = score + fuel;
+                UpdateDashboard();
+            }
+            function UpdateDashboard()
+            {
+                tbAlt.value = y;
+                tbFuel.value = fuel; 
+                tbX.value = x;
+                // tbScore.value = ??
+            }
+            function CheckFuel()
+            {
+                 if (eng == true)
+                 {
+                   fuel = fuel - 5; 
+                 }
+                if (left == true || right == true)
+                {
+                   fuel = fuel - 1; 
+                }
+                if (fuel < 0)
+                {
+                   fuel = 0;
+                }
+                if (fuel == 0)
+                {
+                    if (eng == true)
+                    {
+                        Engine();
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div class="DivOuter">
+            <div class="DivControl">
+                <input type="button" id = "btnSim" value= "Play" onclick = "Sim()" class = "btnLarge" /> <br /> <br />
+                <input type="button" id = "btnLeft" value= "<" onclick = "Left()" class = "btnSmall" />
+                <input type="button" id = "btnEng" value= "Engine" onclick = "Engine()" class = "btnLarge" />
+                <input type="button" id = "btnRight" value= ">" onclick = "Right()" class = "btnSmall" /> <br /> <br />
+                <b>Score: </b> <input type="text" id = "tbScore" value= "0" class = "Textbox" /> <br /> <br />
+                <b>Fuel: </b> <input type="text"  id = "tbFuel" value= "10000" class = "Textbox" /> <br /> <br />
+                <b>Altitude: </b> <input type="text" id = "tbAlt" value= "0" class = "Textbox"/> <br /> <br />
+                <b>    X: </b> <input type="text" id = "tbX" value= "100" class = "Textbox"/> <br /> <br />
+            </div>
+            <div class="DivGame">
+                <img id = "imgRocket" src= "Images/Rocket0.png" style="margin-left: 100px; margin-top: 800px;" />
+            </div>
+        </div>
+    </body>
+</html>
